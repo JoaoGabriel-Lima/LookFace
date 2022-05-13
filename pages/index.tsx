@@ -56,11 +56,15 @@ const Home: NextPage = () => {
     const videoHeight = webcamRef!.current!.video!.videoHeight;
     canvasRef!.current!.width = videoWidth;
     canvasRef!.current!.height = videoHeight;
+    const cnvs = document.getElementById("canvas") as HTMLCanvasElement;
+    const ctx = cnvs.getContext("2d");
+    ctx?.scale(-1, 1);
+    ctx?.translate(-cnvs.width, 0);
     setIsLoading(false);
     if (model === null) {
-      predictionFunction(modelState);
+      predictionFunction(modelState, ctx);
     } else {
-      predictionFunction(model);
+      predictionFunction(model, ctx);
     }
   };
 
@@ -102,7 +106,7 @@ const Home: NextPage = () => {
     }
   }
 
-  async function predictionFunction(model: any) {
+  async function predictionFunction(model: any, ctx: any) {
     if (typeof webcamRef.current == "undefined") {
       console.log("undefined");
       return;
@@ -116,8 +120,6 @@ const Home: NextPage = () => {
       return;
     }
 
-    const cnvs = document.getElementById("canvas") as HTMLCanvasElement;
-    const ctx = cnvs.getContext("2d");
     const returnTensors = false;
     const predictions = await model.estimateFaces(
       document.getElementById("webcam")
@@ -158,7 +160,7 @@ const Home: NextPage = () => {
       }
     }
 
-    const id = requestAnimationFrame(() => predictionFunction(model));
+    const id = requestAnimationFrame(() => predictionFunction(model, ctx));
     setAnimationFrameId(id);
   }
   return (
@@ -307,6 +309,7 @@ const Home: NextPage = () => {
                     height={480}
                     screenshotFormat="image/jpeg"
                     width={850}
+                    mirrored={true}
                     videoConstraints={{
                       width: 850,
                       height: 480,
