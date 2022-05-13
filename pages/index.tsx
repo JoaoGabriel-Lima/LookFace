@@ -19,14 +19,15 @@ import FaceGallery from "./components/face_gallery";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 
 // import facemesh from "@tensorflow-models/face-landmarks-detection";
-// import * as tfjsWasm from "@tensorflow/tfjs-backend-wasm";
+import * as tfjsWasm from "@tensorflow/tfjs-backend-wasm";
 import * as tf from "@tensorflow/tfjs";
 import * as blazeface from "@tensorflow-models/blazeface";
 import * as facemesh from "@tensorflow-models/facemesh";
 import { drawMesh } from "../util/ultilities";
 
 const Home: NextPage = () => {
-  const selectedmodel = 1;
+  // eslint-disable-next-line prefer-const
+  let selectedmodel = 2;
   const [isOpen, setIsOpen] = React.useState(true);
   const [isMute, setIsMute] = React.useState(false);
   const [isMenuOpen, setIsMenuOpen] = React.useState(true);
@@ -39,16 +40,16 @@ const Home: NextPage = () => {
   const webcamRef = React.useRef<any>(null);
   const canvasRef = React.useRef<any>(null);
 
-  // tfjsWasm.setWasmPaths(
-  //   `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`
-  // );
+  tfjsWasm.setWasmPaths(
+    `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`
+  );
   React.useEffect(() => {
     initialLoading();
   }, []);
 
   const initialLoading = async () => {
     console.log("Initial Loading");
-    await tf.setBackend("webgl");
+    await tf.setBackend("wasm");
     tf.ready().then(() => {
       console.log(tf.getBackend());
       loadModel();
