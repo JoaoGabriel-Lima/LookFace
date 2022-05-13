@@ -19,66 +19,74 @@ import FaceGallery from "./components/face_gallery";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 
 // import facemesh from "@tensorflow-models/face-landmarks-detection";
-import * as tfjsWasm from "@tensorflow/tfjs-backend-wasm";
+// import * as tfjsWasm from "@tensorflow/tfjs-backend-wasm";
 import * as tf from "@tensorflow/tfjs";
 import * as blazeface from "@tensorflow-models/blazeface";
 import * as facemesh from "@tensorflow-models/facemesh";
 import { drawMesh } from "../util/ultilities";
+import OptionsSection from "./components/options_section";
 
 const Home: NextPage = () => {
   // eslint-disable-next-line prefer-const
   let selectedmodel = 2;
-  const [isOpen, setIsOpen] = React.useState(true);
-  const [isMute, setIsMute] = React.useState(false);
-  const [isMenuOpen, setIsMenuOpen] = React.useState(true);
+  const [isOpen, setIsOpen] = React.useState<boolean>(true);
+  const [isMute, setIsMute] = React.useState<boolean>(false);
+  const [isMenuOpen, setIsMenuOpen] = React.useState<boolean>(true);
   const [modelState, setModel] = React.useState<any>(null);
-  const [people, setPeople] = React.useState<any>(0);
-  const [isRunning, setIsRunning] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [people, setPeople] = React.useState<number>(0);
+  const [animationFrameId, setAnimationFrameId] = React.useState<number>(0);
+  const [isVideoVisible, setIsVideoVisible] = React.useState<boolean>(true);
+  const webcamRef = React.useRef<Webcam>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
-  const [webcam, setWebcam] = React.useState<any>();
-  const [canvas, setCanvas] = React.useState<any>();
-  const webcamRef = React.useRef<any>(null);
-  const canvasRef = React.useRef<any>(null);
-
-  tfjsWasm.setWasmPaths(
-    `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`
-  );
+  // tfjsWasm.setWasmPaths(
+  //   `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`
+  // );
   React.useEffect(() => {
     initialLoading();
   }, []);
+  const callDrawing = async (model: any) => {
+    setIsLoading(true);
+    cancelAnimationFrame(animationFrameId);
+    console.log("checking Webcam");
+    await handleLoadWaiting();
+    console.log("Webcam checked");
+    const videoWidth = webcamRef!.current!.video!.videoWidth;
+    const videoHeight = webcamRef!.current!.video!.videoHeight;
+    canvasRef!.current!.width = videoWidth;
+    canvasRef!.current!.height = videoHeight;
+    setIsLoading(false);
+    if (model === null) {
+      predictionFunction(modelState);
+    } else {
+      predictionFunction(model);
+    }
+  };
 
   const initialLoading = async () => {
     console.log("Initial Loading");
-    await tf.setBackend("wasm");
+    await tf.setBackend("webgl");
+    await handleLoadWaiting();
     tf.ready().then(() => {
       console.log(tf.getBackend());
+
       loadModel();
     });
   };
-
-  React.useEffect(() => {
-    console.log("Webcam Ready");
-    if (webcam != null) {
-    }
-  }, [webcam]);
-
-  React.useEffect(() => {
-    console.log("Canvas Ready");
-    if (isOpen && modelState != null) {
-      console.log("Started");
-      loadModel();
-    }
-  }, [canvas]);
-  React.useEffect(() => {
-    predictionFunction(modelState);
-    console.log("Prediction Function called by webcam Ready");
-  }, [webcamRef?.current?.video?.readyState, isRunning]);
+  const handleLoadWaiting = async () => {
+    return new Promise((resolve) => {
+      const timer = setInterval(() => {
+        if (webcamRef.current?.video?.readyState == 4) {
+          resolve(true);
+          clearInterval(timer);
+        }
+      }, 500);
+    });
+  };
 
   async function loadModel() {
     try {
-      if (modelState != null) {
-        console.log("animationframe requested");
-      }
       let model = null;
       if (selectedmodel === 1) {
         model = await blazeface.load();
@@ -87,16 +95,7 @@ const Home: NextPage = () => {
       }
       setModel(model);
       console.log("set loaded Model");
-      const videoWidth = webcamRef.current.video.videoWidth;
-      const videoHeight = webcamRef.current.video.videoHeight;
-      canvasRef.current.width = videoWidth;
-      canvasRef.current.height = videoHeight;
-      if (!isRunning) {
-        console.log("animationframe requested");
-        setIsRunning(true);
-      } else {
-        console.log("Already running 😀");
-      }
+      callDrawing(model);
     } catch (err) {
       console.log(err);
       console.log("failed load model");
@@ -104,8 +103,6 @@ const Home: NextPage = () => {
   }
 
   async function predictionFunction(model: any) {
-    // console.log("called");
-    if (!isOpen) return;
     if (typeof webcamRef.current == "undefined") {
       console.log("undefined");
       return;
@@ -114,34 +111,24 @@ const Home: NextPage = () => {
       console.log("null");
       return;
     }
-    if (webcamRef.current.video.readyState !== 4) {
+    if (webcamRef?.current.video?.readyState !== 4) {
       console.log("not ready");
-
-      if (!isRunning) {
-        setTimeout(() => {
-          setIsRunning(true);
-        }, 2500);
-      }
       return;
     }
 
     const cnvs = document.getElementById("canvas") as HTMLCanvasElement;
     const ctx = cnvs.getContext("2d");
     const returnTensors = false;
-
     const predictions = await model.estimateFaces(
       document.getElementById("webcam")
-      // returnTensors
     );
-
     setPeople(predictions.length);
     ctx?.clearRect(
       0,
       0,
-      webcamRef.current.video.videoWidth,
-      webcamRef.current.video.videoHeight
+      webcamRef?.current?.video?.videoWidth || 0,
+      webcamRef?.current?.video?.videoHeight || 0
     );
-    // console.log(predictions);
     if (selectedmodel === 1) {
       if (predictions.length > 0) {
         predictions.forEach((prediction: any) => {
@@ -149,7 +136,6 @@ const Home: NextPage = () => {
             prediction.topLeft = prediction.topLeft.arraySync();
             prediction.bottomRight = prediction.bottomRight.arraySync();
           }
-
           const start = prediction.topLeft;
           const end = prediction.bottomRight;
           const size = [end[0] - start[0], end[1] - start[1]];
@@ -160,21 +146,20 @@ const Home: NextPage = () => {
           ctx!.textAlign = "center";
           ctx!.fillText("Jão", start[0] + 25, start[1] - 80);
           console.log("drawing");
-          // prediction.landmarks.forEach((landmark: any) => {
-          //   ctx!.fillStyle = "rgba(0, 255, 0, 0.5)";
-          //   ctx!.fillRect(landmark[0], landmark[1], 5, 5);
-          // });
+          prediction.landmarks.forEach((landmark: any) => {
+            ctx!.fillStyle = "rgba(0, 255, 0, 0.5)";
+            ctx!.fillRect(landmark[0], landmark[1], 5, 5);
+          });
         });
-        // console.log("called");
       }
     } else {
       if (predictions.length > 0) {
-        // console.log(predictions);
         drawMesh(predictions, ctx!);
       }
     }
 
-    requestAnimationFrame(() => predictionFunction(model));
+    const id = requestAnimationFrame(() => predictionFunction(model));
+    setAnimationFrameId(id);
   }
   return (
     <HomeCointainer>
@@ -221,7 +206,7 @@ const Home: NextPage = () => {
                   LookFace
                 </h2>
               </div>
-              <div className="z-20 absolute bottom-5 right-7 flex items-center bg-[#343446] px-4 py-2 rounded-lg">
+              <div className="z-20 absolute top-20 left-7 xl:top-auto xl:left-auto xl:bottom-5 xl:right-7 flex items-center bg-[#343446] px-4 py-2 rounded-lg">
                 {isOpen ? (
                   people ? (
                     <h2 className="text-white text-lg font-medim drop-shadow-lg ">
@@ -243,6 +228,13 @@ const Home: NextPage = () => {
                   <button
                     className="w-14 h-14 rounded-full flex justify-center items-center shadow-md bg-[#181820]/70"
                     onClick={() => {
+                      if (isOpen) {
+                        console.log("closing");
+                        cancelAnimationFrame(animationFrameId);
+                      } else {
+                        console.log("opening");
+                        callDrawing(null);
+                      }
                       setIsOpen(!isOpen);
                     }}
                   >
@@ -298,20 +290,32 @@ const Home: NextPage = () => {
 
               {isOpen ? (
                 <motion.div className="w-full min-h-[600px] xl:h-[100vh] relative flex justify-center items-center">
+                  {isLoading && (
+                    <div className="z-[10] absolute w-full h-full bg-slate-700/40 flex-col flex justify-center items-center">
+                      <h2 className="text-white text-2xl font-medium text-center">
+                        Loading A.I Model
+                      </h2>
+                      <FiLoader className="text-white/90 text-3xl mt-3 animate-spin" />
+                    </div>
+                  )}
                   <canvas
-                    ref={(el) => {
-                      canvasRef.current = el;
-                      setCanvas(el);
-                    }}
+                    ref={canvasRef}
                     id="canvas"
                     className="z-[5] absolute min-h-[100px] w-full h-auto"
                   />
                   <Webcam
-                    ref={(el) => {
-                      webcamRef.current = el;
-                      setWebcam(el);
+                    height={480}
+                    screenshotFormat="image/jpeg"
+                    width={850}
+                    videoConstraints={{
+                      width: 850,
+                      height: 480,
+                      facingMode: "user",
                     }}
-                    className=" absolute min-h-[100px] w-full h-auto"
+                    ref={webcamRef}
+                    className={`${
+                      isVideoVisible ? "visible" : "invisible"
+                    } absolute min-h-[100px] w-full h-auto`}
                     id="webcam"
                     audio={false}
                   />
@@ -348,6 +352,14 @@ const Home: NextPage = () => {
                     LookFace is a A.I facial recognition website.
                   </h1>
                 </nav>
+                <OptionsSection
+                  name="Options"
+                  buttonfunc={() => {
+                    setIsVideoVisible(!isVideoVisible);
+                    console.log("changed");
+                  }}
+                  state={isVideoVisible}
+                />
                 <FaceGallery name="Face Gallery" />
                 <div className="absolute bottom-5 right-7">
                   <a
