@@ -24,8 +24,8 @@ import * as tf from "@tensorflow/tfjs";
 import * as blazeface from "@tensorflow-models/blazeface";
 import * as facemesh from "@tensorflow-models/facemesh";
 import { drawMesh } from "../util/ultilities";
-import { loadModels } from "../util/face_recognition";
-import { getFaceDetection } from "../util/face_recognition";
+// import { loadModels } from "../util/face_recognition";
+// import { getFaceDetection } from "../util/face_recognition";
 import OptionsSection from "./components/options_section";
 import AddFace from "./components/add_face";
 
@@ -75,7 +75,7 @@ const Home: NextPage = () => {
   const initialLoading = async () => {
     console.log("Initial Loading");
     await tf.setBackend("webgl");
-    await loadModels();
+    // await loadModels();
     await handleLoadWaiting();
     tf.ready().then(() => {
       console.log(tf.getBackend());
@@ -95,8 +95,8 @@ const Home: NextPage = () => {
   };
 
   const findFaceName = async () => {
-    const facenameresult = await getFaceDetection();
-    console.log(facenameresult);
+    // const facenameresult = await getFaceDetection();
+    // console.log(facenameresult);
   };
 
   async function loadModel() {
