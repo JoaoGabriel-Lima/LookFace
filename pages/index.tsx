@@ -18,13 +18,13 @@ import Webcam from "react-webcam";
 import FaceGallery from "./components/face_gallery";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 
-// import facemesh from "@tensorflow-models/face-landmarks-detection";
 // import * as tfjsWasm from "@tensorflow/tfjs-backend-wasm";
 import * as tf from "@tensorflow/tfjs";
 import * as blazeface from "@tensorflow-models/blazeface";
 import * as facemesh from "@tensorflow-models/facemesh";
 import { drawMesh } from "../util/ultilities";
 import OptionsSection from "./components/options_section";
+import AddFace from "./components/add_face";
 
 const Home: NextPage = () => {
   // eslint-disable-next-line prefer-const
@@ -39,6 +39,7 @@ const Home: NextPage = () => {
   const [isVideoVisible, setIsVideoVisible] = React.useState<boolean>(true);
   const webcamRef = React.useRef<Webcam>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [addFaceOverlay, setAddFaceOverlay] = React.useState<boolean>(false);
 
   // tfjsWasm.setWasmPaths(
   //   `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`
@@ -166,6 +167,7 @@ const Home: NextPage = () => {
   return (
     <HomeCointainer>
       <Head>
+        <meta name="viewport" content="initial-scale=1, width=device-width" />
         <title>LookFace - Home</title>
         <meta
           name="description"
@@ -176,8 +178,25 @@ const Home: NextPage = () => {
       <LayoutGroup>
         <motion.main
           layout
-          className="overflow-hidden flex xl:justify-between flex-col xl:flex-row items-center w-full min-h-[100vh]"
+          className=" overflow-hidden flex xl:justify-between flex-col xl:flex-row items-center w-full min-h-[100vh]"
         >
+          <AnimatePresence>
+            {addFaceOverlay && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="px-[3vw] absolute w-full min-h-full bg-black/40 flex justify-center items-center z-[60]"
+              >
+                <AddFace />
+                <div
+                  onClick={() => setAddFaceOverlay(false)}
+                  className="w-full h-full absolute cursor-pointer"
+                ></div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <div
             className={`absolute top-10 hidden xl:block right-9 z-20 text-white`}
           >
@@ -203,12 +222,12 @@ const Home: NextPage = () => {
               className="w-full min-h-[600px] xl:min-h-[100vh] relative flex bg-[#181820] flex-col items-center justify-center"
             >
               <div className="z-20 absolute top-7 left-7 flex items-center">
-                <FaFingerprint className="text-white text-2xl mr-3 drop-shadow-lg'" />
-                <h2 className="text-white text-2xl font-semibold drop-shadow-lg ">
+                <FaFingerprint className="cursor-pointer text-white text-2xl mr-3 drop-shadow-lg'" />
+                <h2 className="text-white cursor-pointer text-2xl font-semibold drop-shadow-lg ">
                   LookFace
                 </h2>
               </div>
-              <div className="z-20 absolute top-20 left-7 xl:top-auto xl:left-auto xl:bottom-5 xl:right-7 flex items-center bg-[#343446] px-4 py-2 rounded-lg">
+              <div className="z-20 absolute top-20 left-7 mr-4 xl:top-auto xl:left-auto xl:bottom-5 xl:right-7 flex items-center bg-[#343446] px-4 py-2 rounded-lg">
                 {isOpen ? (
                   people ? (
                     <h2 className="text-white text-lg font-medim drop-shadow-lg ">
@@ -325,7 +344,7 @@ const Home: NextPage = () => {
                 </motion.div>
               ) : (
                 <div className="flex flex-col justify-center items-center">
-                  <h4 className="text-white/[.9] font text-lg">
+                  <h4 className="text-white/[.9] text-center text-lg">
                     Waiting for camera signal
                   </h4>
                   <FiLoader className="text-white/90 text-3xl mt-3 animate-spin" />
@@ -348,32 +367,41 @@ const Home: NextPage = () => {
                   },
                 }}
                 id="menu_section"
-                className={`z-[10] relative w-[100vw] px-[3vw] xl:px-9 h-auto min-h-[300px] xl:m-0 xl:max-w-[390px] xl:w-[46vw] xl:min-h-[100vh] rounded-t-2xl xl:rounded-t-none xl:rounded-l-2xl flex bg-[#E9E5DD] flex-col `}
+                className={`z-[10] relative w-[100vw] px-7 xl:px-9 h-auto min-h-[300px] xl:m-0 xl:max-w-[390px] xl:w-[46vw] xl:max-h-[100vh] xl:min-h-[100vh] rounded-t-2xl xl:rounded-t-none xl:rounded-l-2xl flex bg-[#E9E5DD] flex-col `}
               >
                 <nav className="flex items-start justify-between mt-10">
                   <h1 className="text-2xl xl:text-3xl font-extrabold text-black/90 cursor-pointer max-w-[200px]  transition-all duration-500">
-                    LookFace is a A.I facial recognition website.
+                    LookFace is a{" "}
+                    <span className="text-black/80">
+                      A.I facial recognition
+                    </span>{" "}
+                    website.
                   </h1>
                 </nav>
-                <OptionsSection
-                  name="Options"
-                  buttonfunc={() => {
-                    setIsVideoVisible(!isVideoVisible);
-                    console.log("changed");
-                  }}
-                  state={isVideoVisible}
-                />
-                <FaceGallery name="Face Gallery" />
-                <div className="absolute bottom-5 right-7">
-                  <a
-                    href="https://github.com/JoaoGabriel-Lima"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex text-sm items-center font-medium text-black/50 hover:text-black transition-all duration-500 cursor-pointer"
-                  >
-                    Made with all of my <FaHeart className="mx-[4px] text-sm" />{" "}
-                    by Jão
-                  </a>
+                <div className="overflow-auto">
+                  <OptionsSection
+                    name="Options"
+                    buttonfunc={() => {
+                      setIsVideoVisible(!isVideoVisible);
+                      console.log("changed");
+                    }}
+                    state={isVideoVisible}
+                  />
+                  <FaceGallery
+                    name="Face Gallery"
+                    newface={() => setAddFaceOverlay(true)}
+                  />
+                  <div className="absolute bottom-5 right-7">
+                    <a
+                      href="https://github.com/JoaoGabriel-Lima"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex text-sm items-center font-medium text-black/50 hover:text-black transition-all duration-500 cursor-pointer"
+                    >
+                      Made with all of my{" "}
+                      <FaHeart className="mx-[4px] text-sm" /> by Jão
+                    </a>
+                  </div>
                 </div>
               </motion.section>
             )}

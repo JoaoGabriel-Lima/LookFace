@@ -8,7 +8,7 @@ const FaceGallery = (props: any) => {
       className="flex justify-start items-start flex-col mb-24"
     >
       <div className="flex w-full justify-between items-center gap-x-3 mt-16">
-        <h2 className="text-lg font-semibold text-black/80 ">{props.name}</h2>
+        <h2 className="text-lg font-bold text-black/80 ">{props.name}</h2>
         <div className="flex justify-center items-center px-4 py-2 rounded-full bg-black/80">
           <h4 className="text-white text-sm text-center">Coming Soon</h4>
         </div>
@@ -20,7 +20,11 @@ const FaceGallery = (props: any) => {
       >
         <div
           id="face_item"
-          className="cursor-pointer flex justify-center items-center bg-transparent border-[3px] rounded-xl border-black/[0.75] w-full max-w-[150px] h-[220px]"
+          onClick={() => {
+            window.scrollTo(0, 0);
+            props.newface();
+          }}
+          className="cursor-pointer flex justify-center items-center bg-transparent hover:bg-black/5 hover:shadow-lg transition-colors border-[3px] rounded-xl border-black/[0.75] w-full max-w-[150px] h-[220px]"
         >
           <MdOutlineAddReaction className="text-4xl text-black/70" />
         </div>
