@@ -19,10 +19,13 @@ import FaceGallery from "./components/face_gallery";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 
 // import * as tfjsWasm from "@tensorflow/tfjs-backend-wasm";
+
 import * as tf from "@tensorflow/tfjs";
 import * as blazeface from "@tensorflow-models/blazeface";
 import * as facemesh from "@tensorflow-models/facemesh";
 import { drawMesh } from "../util/ultilities";
+import { loadModels } from "../util/face_recognition";
+import { getFaceDetection } from "../util/face_recognition";
 import OptionsSection from "./components/options_section";
 import AddFace from "./components/add_face";
 
@@ -72,6 +75,7 @@ const Home: NextPage = () => {
   const initialLoading = async () => {
     console.log("Initial Loading");
     await tf.setBackend("webgl");
+    await loadModels();
     await handleLoadWaiting();
     tf.ready().then(() => {
       console.log(tf.getBackend());
@@ -88,6 +92,11 @@ const Home: NextPage = () => {
         }
       }, 500);
     });
+  };
+
+  const findFaceName = async () => {
+    const facenameresult = await getFaceDetection();
+    console.log(facenameresult);
   };
 
   async function loadModel() {
@@ -173,6 +182,7 @@ const Home: NextPage = () => {
           name="description"
           content="LookFace is an face recognition website"
         />
+        {/* <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script> */}
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <LayoutGroup>
@@ -387,6 +397,7 @@ const Home: NextPage = () => {
                     }}
                     state={isVideoVisible}
                   />
+                  <button onClick={() => findFaceName()}>Check</button>
                   <FaceGallery
                     name="Face Gallery"
                     newface={() => setAddFaceOverlay(true)}
